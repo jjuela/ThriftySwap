@@ -1,5 +1,6 @@
 from flask import Flask, render_template, url_for, redirect
 from flask_sqlalchemy import SQLAlchemy
+from flask import request, jsonify
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
@@ -23,10 +24,33 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
+class Store(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    store_name = db.Column(db.String(50), nullable=False, unique=True) 
+
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), nullable=False, unique=True)
     password = db.Column(db.String(80), nullable=False)
+
+class SwapShopInventory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    item_name = db.Column(db.String(50), nullable=False)
+    material = db.Column(db.String(50), nullable=False)
+    weight = db.Column(db.Float, nullable=False)
+    stock = db.Column(db.Integer, nullable=False)
+    value_per_item = db.Column(db.DECIMAL(10, 2), nullable=False)
+    barcode = db.Column(db.String(50), nullable=True)
+
+class ThriftyOwlInventory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    item_name = db.Column(db.String(50), nullable=False)
+    value_per_item = db.Column(db.DECIMAL(10, 2), nullable=False)
+    weight = db.Column(db.Float, nullable=False)
+    donation = db.Column(db.Integer, nullable=False)
+    date_received = db.Column(db.Date, nullable=False)
+    barcode = db.Column(db.String(50), nullable=True)
+
 
 
 class RegisterForm(FlaskForm):
@@ -54,12 +78,6 @@ class LoginForm(FlaskForm):
                              InputRequired(), Length(min=8, max=20)], render_kw={"placeholder": "Password"})
 
     submit = SubmitField('Login')
-
-
-
-@app.route('/welcome')
-def welcome():
-    return render_template('welcome.html')
 
 
 @app.route('/')
@@ -103,7 +121,6 @@ def register():
         return redirect(url_for('login'))
 
     return render_template('register.html', form=form)
-
 
 if __name__ == "__main__":
     app.run(debug=True)
