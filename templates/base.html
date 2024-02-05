@@ -12,6 +12,7 @@
             <p>Welcome, {{ current_user.username }}</p>
         {% endif %}
         <ul>
+            <a href="{{ url_for('profile') }}">View Profile</a>
             <a href="{{ url_for('logout') }}">Logout</a>
             <!-- Add more items as needed -->
         </ul>

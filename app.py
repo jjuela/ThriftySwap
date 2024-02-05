@@ -3,8 +3,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask import request, jsonify
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import InputRequired, Length, ValidationError
+from wtforms import StringField, PasswordField, SubmitField, ValidationError,SelectField
+from wtforms.validators import InputRequired, Length, ValidationError, Email
 from flask_bcrypt import Bcrypt
 
 app = Flask(__name__)
@@ -31,7 +31,10 @@ class Store(db.Model):
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), nullable=False, unique=True)
+    email = db.Column(db.String(120), nullable=False, unique=True) 
     password = db.Column(db.String(80), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default='student')
+
 
 class SwapShopInventory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -51,14 +54,24 @@ class ThriftyOwlInventory(db.Model):
     date_received = db.Column(db.Date, nullable=False)
     barcode = db.Column(db.String(50), nullable=True)
 
+# Set the app context (this is necessary for Flask-SQLAlchemy)
+app.app_context().push()
+
+# Create all tables
+db.create_all()
 
 
 class RegisterForm(FlaskForm):
+    email = StringField(validators=[
+             InputRequired(), Length(min=4, max=50)], render_kw={"placeholder": "Email"})
+    
     username = StringField(validators=[
                            InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Username"})
 
     password = PasswordField(validators=[
                              InputRequired(), Length(min=8, max=20)], render_kw={"placeholder": "Password"})
+    
+    role = SelectField('Role', choices=[('student', 'Student'), ('staff', 'Staff')], default='student')
 
     submit = SubmitField('Register')
 
@@ -69,6 +82,9 @@ class RegisterForm(FlaskForm):
             raise ValidationError(
                 'That username already exists. Please choose a different one.')
 
+    def validate_email(self, email):
+        if not email.data.lower().endswith('@southernct.edu'):
+            raise ValidationError('Please use a Southern Connecticut State University email address.')
 
 class LoginForm(FlaskForm):
     username = StringField(validators=[
@@ -115,12 +131,18 @@ def register():
 
     if form.validate_on_submit():
         hashed_password = bcrypt.generate_password_hash(form.password.data)
-        new_user = User(username=form.username.data, password=hashed_password)
+        new_user = User(username=form.username.data,email=form.email.data,password=hashed_password)
         db.session.add(new_user)
         db.session.commit()
         return redirect(url_for('login'))
 
     return render_template('register.html', form=form)
+
+@app.route('/profile')
+@login_required
+def profile():
+    return render_template('profile.html', user=current_user)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
