@@ -1,19 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}SwapShop{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        /* Custom CSS */
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        nav {
+            background-color: #344035;
+            color: rgb(125, 176, 131);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav p {
+            margin: 0;
+        }
+
+        nav ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            gap: 10px;
+        }
+
+        nav ul a {
+            color: #ffffff;
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        nav ul a:hover {
+            background-color: #6c757d;
+        }
+
+        #content {
+            padding: 20px;
+        }
+    </style>
 </head>
+
 <body>
     <nav>
         {% if current_user.is_authenticated %}
-            <p>Welcome, {{ current_user.username }}</p>
+        <p>Welcome, {{ current_user.username }}</p>
         {% endif %}
         <ul>
-            <a href="{{ url_for('profile') }}">View Profile</a>
-            <a href="{{ url_for('logout') }}">Logout</a>
+            <li><a href="{{ url_for('profile') }}"><i class="fas fa-user"></i> View Profile</a></li>
+            <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             <!-- Add more items as needed -->
         </ul>
     </nav>
@@ -21,5 +71,10 @@
     <div id="content">
         {% block content %}{% endblock %}
     </div>
+
+    <!-- Bootstrap JS (Optional) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
+
 </html>
