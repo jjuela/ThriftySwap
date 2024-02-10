@@ -1,18 +1,30 @@
-from flask import Flask, render_template, url_for, redirect
+from flask import Flask, render_template, url_for, redirect, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from flask import request, jsonify
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, ValidationError,SelectField
-from wtforms.validators import InputRequired, Length, ValidationError, Email
+from wtforms import StringField, PasswordField, SubmitField, ValidationError, SelectField
+from wtforms.validators import InputRequired, Length, Email
 from flask_bcrypt import Bcrypt
+from flask_mail import Mail, Message 
+from flask_migrate import Migrate
+from datetime import datetime, timedelta
+import random
+import string
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SECRET_KEY'] = 'csc400'
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USERNAME'] = 'OwlGoSCSU@gmail.com'
+app.config['MAIL_PASSWORD'] = 'rbjb dwxk lqly smlz'
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+mail = Mail(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -34,7 +46,8 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(120), nullable=False, unique=True) 
     password = db.Column(db.String(80), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='student')
-
+    reset_code = db.Column(db.String(5))
+    reset_expiration = db.Column(db.DateTime)
 
 class SwapShopInventory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -95,9 +108,24 @@ class LoginForm(FlaskForm):
 
     submit = SubmitField('Login')
 
+class ForgotPasswordForm(FlaskForm):
+    email = StringField(validators=[
+             InputRequired(), Length(min=4, max=50)], render_kw={"placeholder": "Email"})
+
+    submit = SubmitField('Submit')
+
+class ResetPasswordForm(FlaskForm):
+    code = StringField(validators=[
+             InputRequired(), Length(min=5, max=5)], render_kw={"placeholder": "Code"})
+
+    password = PasswordField(validators=[
+                             InputRequired(), Length(min=8, max=20)], render_kw={"placeholder": "Password"})
+
+    submit = SubmitField('Submit')
 
 @app.route('/')
 def home():
+    logout_user()
     return render_template('home.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -111,12 +139,61 @@ def login():
                 return redirect(url_for('dashboard'))
     return render_template('login.html', form=form)
 
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    form = ForgotPasswordForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            # Generate a random reset code
+            user.reset_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+
+            # Set the expiration date to 10 minutes from now
+            user.reset_expiration = datetime.now() + timedelta(minutes=10)
+
+            db.session.commit()
+
+            # Send reset email
+            msg = Message('Password Reset', sender='SustainableSouthern@gmail.com', recipients=[user.email])
+            msg.body = 'Your reset code is: {}'.format(user.reset_code)
+            mail.send(msg)
+
+            # Redirect to the enter code page
+            return redirect(url_for('enter_code'))
+
+    return render_template('forgot_password.html', form=form)
+
+@app.route('/reset_password', methods=['GET', 'POST'])
+def enter_code():
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(reset_code=form.code.data).first()
+        if user:
+            if datetime.now() > user.reset_expiration:
+                print('Reset code has expired.')
+                return redirect(url_for('forgot_password'))
+            
+            if user.reset_expiration > datetime.now():
+                user.password = bcrypt.generate_password_hash(form.password.data)
+                user.reset_code = None
+                user.reset_expiration = None
+                db.session.commit()
+                return redirect(url_for('login'))
+    return render_template('reset_password.html', form=form)
+
+@app.route('/verify_code', methods=['POST'])
+def verify_code():
+    code = request.form.get('code')
+    user = User.query.filter_by(reset_code=code).first()
+    if user and datetime.now() <= user.reset_expiration:
+        return jsonify(code_valid=True)
+    else:
+        return jsonify(code_valid=False)
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 @login_required
 def dashboard():
     return render_template('dashboard.html')
-
 
 @app.route('/logout', methods=['GET', 'POST'])
 @login_required
@@ -125,7 +202,7 @@ def logout():
     return redirect(url_for('login'))
 
 
-@ app.route('/register', methods=['GET', 'POST'])
+@app.route('/register', methods=['GET', 'POST'])
 def register():
     form = RegisterForm()
 
