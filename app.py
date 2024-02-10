@@ -45,7 +45,9 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(20), nullable=False, unique=True)
     email = db.Column(db.String(120), nullable=False, unique=True) 
     password = db.Column(db.String(80), nullable=False)
-    role = db.Column(db.String(20), nullable=False, default='student')
+    first_name = db.Column(db.String(20), nullable=True)
+    last_name = db.Column(db.String(20), nullable=True)
+    role = db.Column(db.String(20), nullable=False)
     reset_code = db.Column(db.String(5))
     reset_expiration = db.Column(db.DateTime)
 
@@ -83,6 +85,10 @@ class RegisterForm(FlaskForm):
 
     password = PasswordField(validators=[
                              InputRequired(), Length(min=8, max=20)], render_kw={"placeholder": "Password"})
+    first_name = StringField(validators=[
+                            InputRequired(), Length(min=1, max=20)], render_kw={"placeholder": "First Name"})
+    last_name = StringField(validators=[
+                            InputRequired(), Length(min=1, max=20)], render_kw={"placeholder": "Last Name"})
     
     role = SelectField('Role', choices=[('student', 'Student'), ('staff', 'Staff')], default='student')
 
@@ -208,7 +214,8 @@ def register():
 
     if form.validate_on_submit():
         hashed_password = bcrypt.generate_password_hash(form.password.data)
-        new_user = User(username=form.username.data,email=form.email.data,password=hashed_password)
+        new_user = User(username=form.username.data,email=form.email.data,password=hashed_password,
+                        first_name=form.first_name.data,last_name=form.last_name.data,role=form.role.data)
         db.session.add(new_user)
         db.session.commit()
         return redirect(url_for('login'))
