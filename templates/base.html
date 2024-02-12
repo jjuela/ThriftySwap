@@ -59,7 +59,7 @@
 <body>
     <nav>
         {% if current_user.is_authenticated %}
-        <p>Welcome, {{ current_user.username }}</p>
+        <p>Welcome, {{ current_user.first_name }}</p>
         {% endif %}
         <ul>
             <li><a href="{{ url_for('profile') }}"><i class="fas fa-user"></i> View Profile</a></li>

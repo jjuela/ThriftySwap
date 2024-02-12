@@ -12,6 +12,9 @@
 <body>
     <h1>Thrifty Owl & Swap Shop</h1>
     <h1>Login</h1>
+    <div class = "alert alert-danger" style="color: red;"role="alert">
+        {{ error_message }}
+    </div>
     <form method="POST" action="">
         {{ form.hidden_tag() }}
         {{ form.username }}
