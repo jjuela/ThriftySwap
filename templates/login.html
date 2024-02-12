@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -8,18 +7,17 @@
     <title>Login</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='login.css') }}">
 </head>
-
 <body>
-    <h1>Thrifty Owl & Swap Shop</h1>
-    <h1>Login</h1>
-    <form method="POST" action="">
-        {{ form.hidden_tag() }}
-        {{ form.username }}
-        {{ form.password }}
-        {{ form.submit }}
-    </form>
-
-    <a href="{{ url_for('register') }}">Don't have an account? Sign Up</a>
+    <div class="container">
+        <h1>Thrifty Owl & Swap Shop</h1>
+        <h2>Login</h2>
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+            {{ form.username.label }} {{ form.username }}
+            {{ form.password.label }} {{ form.password }}
+            {{ form.submit }}
+        </form>
+        <a href="{{ url_for('register') }}">Don't have an account? Sign Up</a>
+    </div>
 </body>
-
 </html>
