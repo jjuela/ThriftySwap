@@ -4,7 +4,7 @@ body {
 }
 
 nav {
-    background-color: #f8f8f8; /* Off-white background color */
+    background-color: #f8f8f8;
     padding: 10px;
     display: flex;
     justify-content: space-between;

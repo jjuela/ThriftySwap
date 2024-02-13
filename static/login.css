@@ -1,38 +1,77 @@
+/* login.css */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    text-align: center;
-    padding: 50px;
+    font-family: 'Arial', sans-serif;
+    background-color: #001489;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 300px;
 }
 
 h1 {
     color: #333;
-    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
-    font-size: 40px;
-    font-weight: bold;
+    font-size: 24px;
+    text-align: center;
+}
+
+h2 {
+    color: #555;
+    font-size: 18px;
+    text-align: center;
+    margin-top: 10px;
 }
 
 form {
-    max-width: 300px;
-    margin: 0 auto;
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    margin-top: 20px;
 }
 
-input {
-    width: 100%;
+form label {
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #666;
+}
+
+form input[type="text"],
+form input[type="password"] {
     padding: 10px;
-    margin-bottom: 10px;
-    box-sizing: border-box;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+form input[type="submit"] {
+    background-color: #f5c445; 
+    color: #001489;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+form input[type="submit"]:hover {
+    background-color: #f8cc64;
 }
 
 a {
-    color: #000;
-    text-decoration: none;
     display: block;
-    margin-top: 10px;
+    text-align: center;
+    margin-top: 20px;
+    color: #001489;
+    text-decoration: none;
 }
 
 a:hover {
