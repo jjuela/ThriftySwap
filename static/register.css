@@ -1,7 +1,6 @@
-/* register.css */
 body {
     font-family: 'Arial', sans-serif;
-    background-color: #001489; /* Consistent with login.css */
+    background-color: #001489;
     margin: 0;
     padding: 0;
     display: flex;
@@ -15,7 +14,7 @@ body {
     padding: 20px;
     border-radius: 5px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    width: 300px; /* Adjust width as needed for registration form */
+    width: 300px;
 }
 
 h1, h2 {
@@ -47,7 +46,7 @@ form select {
 }
 
 form input[type="submit"] {
-    background-color: #f5c445; /* Consistent button style */
+    background-color: #f5c445;
     color: #001489;
     padding: 10px;
     border: none;

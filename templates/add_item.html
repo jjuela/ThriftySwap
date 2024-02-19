@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<form method="POST" id="addItemForm" action="{{ url_for('add_item') }}">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+        {{ form.item_name.label }}
+        {{ form.item_name(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.material.label }}
+        {{ form.material(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.weight.label }}
+        {{ form.weight(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.stock.label }}
+        {{ form.stock(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.value_per_item.label }}
+        {{ form.value_per_item(class="form-control") }}
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+<div id="barcodeImage"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3/dist/JsBarcode.all.min.js"></script>
+<script>
+    function printBarcode() {
+        const itemName = document.querySelector('#item_name').value;
+        JsBarcode("#barcodeImage", itemName, {
+            format: "CODE128",
+            width: 2,
+            height: 50
+        });
+        const printWindow = window.open('', '_blank');
+        printWindow.document.body.appendChild(document.getElementById('barcodeImage'));
+        printWindow.print();
+    }
+</script>
+
+{% endblock %}

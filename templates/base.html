@@ -5,14 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}SwapShop{% endblock %}</title>
-    <!-- Bootstrap CSS -->
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-    <!-- Custom CSS -->
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
     <style>
-        /* Custom CSS */
         body {
             font-family: Arial, sans-serif;
         }
@@ -64,7 +60,8 @@
         <ul>
             <li><a href="{{ url_for('profile') }}"><i class="fas fa-user"></i> View Profile</a></li>
             <li><a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-            <!-- Add more items as needed -->
+            <li><a href="{{ url_for('add_item') }}"><i class="fas fa-plus"></i> Add Item</a></li>
+            <li><a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i> Dashboard</a></li>
         </ul>
     </nav>
 
@@ -72,7 +69,6 @@
         {% block content %}{% endblock %}
     </div>
 
-    <!-- Bootstrap JS (Optional) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
