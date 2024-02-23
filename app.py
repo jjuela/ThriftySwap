@@ -19,8 +19,7 @@ login_manager.login_message_category = 'info'
 
 @login_manager.user_loader
 def load_user(user_id):
-    from models import User  # Import your User model here
-    return User.query.get(user_id)
+
 
 from routes import bp as routes_bp
 app.register_blueprint(routes_bp)
