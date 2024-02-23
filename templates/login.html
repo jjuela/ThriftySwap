@@ -11,9 +11,11 @@
 <div class="container">
     <h1>Thrifty Owl & Swap Shop</h1>
     <h2>Login</h2>
+    {% if error_message %}
     <div class="alert alert-danger" role="alert">
         {{ error_message }}
     </div>
+    {% endif %}
     <form method="POST" action="">
         {{ form.hidden_tag() }}
         <div class="form-group">
