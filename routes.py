@@ -1,7 +1,10 @@
+import os
 from flask import Blueprint, render_template, redirect, url_for, request, jsonify, send_file, flash
 from flask_login import current_user, login_user, login_required, logout_user
 from datetime import datetime, timedelta
 from forms import RegisterForm, LoginForm, ForgotPasswordForm, ResetPasswordForm, ItemForm
+from flask_mail import Message
+from werkzeug.utils import secure_filename
 from models import User, Inventory, Store
 from app import app, db, mail
 from flask_bcrypt import Bcrypt
@@ -83,10 +86,19 @@ def register():
     form = RegisterForm()
 
     if form.validate_on_submit():
+
+        if form.picture.data:
+            picture_file = secure_filename(form.picture.data.filename)
+            picture_path = os.path.join(app.root_path, 'static/profile_pics', picture_file)
+            form.picture.data.save(picture_path)
+            picture_file = 'profile_pics/' + picture_file
+        else:
+            picture_file = 'default.jpg'
+
         hashed_password = bcrypt.generate_password_hash(form.password.data)
         new_user = User(username=form.username.data, email=form.email.data, password=hashed_password,
-                        first_name=form.first_name.data, last_name=form.last_name.data, role=form.role.data)
-        
+                        first_name=form.first_name.data, last_name=form.last_name.data, role=form.role.data, profile_picture=picture_file)
+
         db.session.add(new_user)
         db.session.commit()
         return redirect(url_for('login'))

@@ -18,6 +18,7 @@ class User(db.Model, UserMixin):
     reset_expiration = db.Column(db.DateTime)
     store_id = db.Column(db.Integer, db.ForeignKey('store.id'), nullable=True)
     verified = db.Column(db.Boolean, default=False)
+    profile_picture = db.Column(db.String(20), nullable=True, default='default.jpg')
 
 class Inventory(db.Model):
     id = db.Column(db.Integer, primary_key=True)

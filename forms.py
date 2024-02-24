@@ -1,6 +1,7 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, ValidationError, SelectField, FloatField, IntegerField
+from wtforms import StringField, PasswordField, SubmitField, ValidationError, SelectField, FloatField, IntegerField, FileField
 from wtforms.validators import InputRequired, Length, Email, NumberRange
+from flask_wtf.file import FileAllowed
 from models import User  # Import the User model if needed
 
 class RegisterForm(FlaskForm):
@@ -16,10 +17,22 @@ class RegisterForm(FlaskForm):
                             InputRequired(), Length(min=1, max=20)], render_kw={"placeholder": "First Name"})
     last_name = StringField(validators=[
                             InputRequired(), Length(min=1, max=20)], render_kw={"placeholder": "Last Name"})
+    picture = FileField('Upload Profile Picture', validators=[FileAllowed(['jpg', 'png'])])
     
     role = SelectField('Role', choices=[('student', 'Student'), ('staff', 'Staff')], default='student')
 
     submit = SubmitField('Register')
+
+    def validate_username(self, username):
+        existing_user_username = User.query.filter_by(
+            username=username.data).first()
+        if existing_user_username:
+            raise ValidationError(
+                'That username already exists. Please choose a different one.')
+
+    def validate_email(self, email):
+        if not email.data.lower().endswith('@southernct.edu'):
+            raise ValidationError('Please use a Southern Connecticut State University email address.')
 
     def validate_username(self, username):
         existing_user_username = User.query.filter_by(
