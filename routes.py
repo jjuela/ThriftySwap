@@ -18,7 +18,6 @@ bcrypt = Bcrypt()
 
 @bp.route('/')
 def home():
-    logout_user()
     return render_template('home.html')
 
 @app.route('/add_item', methods=['GET', 'POST'])
@@ -101,7 +100,7 @@ def login():
         if user:
             if bcrypt.check_password_hash(user.password, form.password.data):
                 login_user(user)
-                return redirect(url_for('dashboard'))  # Redirect to home page
+                return redirect(url_for('routes.home'))
             else:
                 error_message = 'Invalid username or password. Please try again'
                 return render_template('login.html', form=form, error_message=error_message)
@@ -161,6 +160,12 @@ def verify_code():
 def dashboard():
     inventory_items = Inventory.query.all()
     return render_template('dashboard.html', inventory_items=inventory_items)
+
+@app.route('/swapshopbase')
+@login_required
+def swapshopbase():
+    # Code here
+    return render_template('swapshopbase.html')
 
 @app.route('/print_barcode/<barcode>', methods=['GET'])
 def print_barcode(barcode):

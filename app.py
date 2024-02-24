@@ -18,14 +18,18 @@ bcrypt = Bcrypt(app)
 login_manager.login_view = 'login'
 login_manager.login_message_category = 'info'
 
+# Import models here
+from models import User, Store, Inventory
+
 @login_manager.user_loader
 def load_user(user_id):
-    from models import User  # Import inside the function to avoid circular import
     return User.query.get(int(user_id))
-
 
 from routes import bp as routes_bp
 app.register_blueprint(routes_bp)
+
+with app.app_context():
+    db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,5 +1,5 @@
 class Config:
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///database.db'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///instance/database.db'
     SECRET_KEY = 'csc400'
     MAIL_SERVER = 'smtp.gmail.com'
     MAIL_PORT = 465
