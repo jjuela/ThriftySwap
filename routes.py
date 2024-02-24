@@ -26,6 +26,7 @@ def home():
 def add_item():
     form = ItemForm()
     if form.validate_on_submit():
+        print("Form validated successfully")
         item_name = form.item_name.data
         material = form.material.data
         weight = form.weight.data
@@ -33,6 +34,7 @@ def add_item():
         value_per_item = form.value_per_item.data
 
         try:
+            print("Attempting to add item to database")
             barcode_data = generate_barcode()
             new_item = Inventory(item_name=item_name, material=material, weight=weight, stock=stock, value_per_item=value_per_item, barcode=barcode_data)
             db.session.add(new_item)
@@ -44,6 +46,7 @@ def add_item():
 
         return redirect(url_for('dashboard'))
     return render_template('add_item.html', form=form)
+
 
 @app.route('/delete_item', methods=['POST'])
 def delete_item():
