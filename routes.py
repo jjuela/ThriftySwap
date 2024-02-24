@@ -64,17 +64,18 @@ def delete_item():
     else:
         return jsonify({'success': False, 'message': 'Item not found'})
 
-@app.route('/scan_barcode', methods=['POST'])
+@bp.route('/scan_barcode', methods=['POST'])
+@login_required
 def scan_barcode():
     data = request.json
-    barcode = data['barcode']
+    scanned_barcode = data['barcode']
     
-    inventory_item = Inventory.query.filter(func.lower(Inventory.barcode) == func.lower(barcode)).first()
+    inventory_item = Inventory.query.filter_by(barcode=scanned_barcode).first()
 
     if inventory_item:
         inventory_item.stock += 1
         db.session.commit()
-        return jsonify({'success': True, 'message': 'Item quantity increased successfully', 'item': {'id': inventory_item.id}})
+        return jsonify({'success': True, 'message': 'Item quantity increased successfully'})
     else:
         return jsonify({'success': False, 'message': 'Item not found'})
 

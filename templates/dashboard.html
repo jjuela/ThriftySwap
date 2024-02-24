@@ -8,6 +8,7 @@
     <!-- Inventory window -->
     <div class="inventory-window">
         <input type="text" id="scannedBarcode" readonly>
+        <button onclick="scanBarcode()">Scan Barcode</button>
 
         <div class="table-responsive">
             <table class="table table-bordered table-striped">
@@ -31,6 +32,8 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             fetchInventory();
+
+            scanBarcode();
         });
 
         function fetchInventory() {
@@ -133,25 +136,39 @@
         }
 
         function scanBarcode() {
-            const barcode = document.getElementById('scannedBarcode').value;
+            // Assuming your barcode scanner acts like a keyboard input
+            // Listen for keyboard input in the input field where the barcode should appear
+            document.getElementById('scannedBarcode').addEventListener('keypress', function(event) {
+                // Check if Enter key is pressed (barcode scanners often send Enter key after scanning)
+                if (event.keyCode === 13) {
+                    // Get the value entered in the input field
+                    const scannedBarcode = this.value.trim();
+                    
+                    // Clear the input field after scanning
+                    this.value = '';
 
-            fetch('/scan_barcode', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ barcode: barcode }),
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(data.message);
-                        fetchInventory();
-                    } else {
-                        alert(data.message);
-                    }
-                })
-                .catch(error => console.error('Error:', error));
+                    // Send the scanned barcode to the server
+                    fetch('/scan_barcode', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ barcode: scannedBarcode }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            // Optionally, update the UI to reflect the updated quantity
+                            // fetchInventory(); // Call a function to refresh inventory data
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                }
+            });
         }
+
     </script>
 {% endblock %}
