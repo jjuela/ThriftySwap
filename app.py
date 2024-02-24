@@ -23,6 +23,7 @@ def load_user(user_id):
     from models import User  # Import inside the function to avoid circular import
     return User.query.get(int(user_id))
 
+
 from routes import bp as routes_bp
 app.register_blueprint(routes_bp)
 
