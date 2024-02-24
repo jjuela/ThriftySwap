@@ -87,19 +87,23 @@
         }
 
         function printBarcode(barcode) {
-            const barcodeImage = new Image();
+            if (barcode !== null) {
+                const barcodeImage = new Image();
 
-            JsBarcode(barcodeImage, barcode, {
-                format: "CODE128",
-                width: 2,
-                height: 50
-            });
+                JsBarcode(barcodeImage, barcode, {
+                    format: "CODE128",
+                    width: 2,
+                    height: 50
+                });
 
-            const printWindow = window.open('', '_blank');
+                const printWindow = window.open('', '_blank');
 
-            printWindow.document.body.appendChild(barcodeImage);
+                printWindow.document.body.appendChild(barcodeImage);
 
-            printWindow.print();
+                printWindow.print();
+            } else {
+                alert("Barcode number is null.");
+            }
         }
 
         function confirmDelete(itemId) {

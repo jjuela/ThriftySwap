@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, jsonify, send_file
+from flask import Blueprint, render_template, redirect, url_for, request, jsonify, send_file, flash
 from flask_login import current_user, login_user, login_required, logout_user
 from datetime import datetime, timedelta
 from forms import RegisterForm, LoginForm, ForgotPasswordForm, ResetPasswordForm, ItemForm
@@ -26,27 +26,30 @@ def home():
 def add_item():
     form = ItemForm()
     if form.validate_on_submit():
-        print("Form validated successfully")
         item_name = form.item_name.data
         material = form.material.data
         weight = form.weight.data
         stock = form.stock.data
         value_per_item = form.value_per_item.data
-
+        
         try:
-            print("Attempting to add item to database")
-            barcode_data = generate_barcode()
-            new_item = Inventory(item_name=item_name, material=material, weight=weight, stock=stock, value_per_item=value_per_item, barcode=barcode_data)
+            # Generate a random barcode number (replace this with your barcode generation logic)
+            barcode = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+            
+            # Create a new Inventory object with the generated barcode
+            new_item = Inventory(item_name=item_name, material=material, weight=weight, stock=stock, 
+                                 value_per_item=value_per_item, barcode=barcode)
+            
             db.session.add(new_item)
             db.session.commit()
-            print("New item added successfully")
+            flash('Item added successfully', 'success')
+            return redirect(url_for('dashboard'))
         except Exception as e:
             db.session.rollback()
-            print("Error adding item:", e)
+            flash(f'Error adding item: {str(e)}', 'error')
+            return redirect(url_for('add_item'))
 
-        return redirect(url_for('dashboard'))
     return render_template('add_item.html', form=form)
-
 
 @app.route('/delete_item', methods=['POST'])
 def delete_item():
