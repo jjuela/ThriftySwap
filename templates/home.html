@@ -12,13 +12,11 @@
 <body>
     <div class="container">
         {% if current_user.is_authenticated %}
-            <!-- User is logged in, you can display a welcome message or other content here -->
             <h1>Welcome, {{ current_user.username }}!</h1>
             <h2>Please select inventory</h2>
             <a class="btn" href="{{ url_for('dashboard') }}">ThriftyOwl</a><br>
             <a class="btn" href="{{ url_for('swapshopbase') }}">Swap Shop</a><br>
         {% else %}
-            <!-- User is not logged in, display the login and register links -->
             <h1>Login Authentication System in Flask.</h1>
             <a class="btn" href="{{ url_for('login') }}">Login Page</a><br>
             <a class="btn" href="{{ url_for('register') }}">Register Page</a><br>
