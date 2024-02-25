@@ -194,9 +194,18 @@ def generate_barcode_image(barcode):
     code128 = Code128(barcode, writer=ImageWriter())
     return code128.render
 
-@app.route('/profile')
+@app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
+    if request.method == 'POST':
+        if 'picture' in request.files:
+            picture = request.files['picture']
+            filename = secure_filename(picture.filename)
+            picture.save(os.path.join('static/profile_pics', filename))
+            current_user.profile_picture = 'profile_pics/' + filename
+            db.session.commit()
+            return redirect(url_for('profile'))
+
     user_store = Store.query.get(current_user.store_id)
     return render_template('profile.html', user=current_user, store=user_store)
 
