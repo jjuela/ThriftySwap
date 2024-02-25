@@ -47,19 +47,37 @@
             margin-top: 20px;
             text-align: center;
         }
+
+        .changepicbutton {
+            width: 200px; 
+            height: 40px; 
+            margin: auto;
+        }
+      
+        .cancelbutton {
+        width: 100px; 
+        height: 20px; 
+        margin: auto;
+        text-align: center; 
+        padding: 0; 
+        line-height: 20px; 
+        }
+</style>
+</style>
+
     </style>
 </head>
 
 <body>
     <div class="profile-container">
         <img src="{{ url_for('static', filename=user.profile_picture if user.profile_picture != 'default.jpg' else 'profile_pics/default.jpg') }}" alt="Profile" class="profile-image">
-        <h1 class="profile-title">User Profile</h1>
-        <p>Change Profile Picture</p>
-        <form action="{{ url_for('profile') }}" method="post" enctype="multipart/form-data" onsubmit="return validateForm()">
+        <button id="changePicButton" class="btn btn-primary changepicbutton" style="display: block;">Change Profile Picture</button>
+        <form id="uploadForm" action="{{ url_for('profile') }}" method="post" enctype="multipart/form-data" onsubmit="return validateForm()" style="display: none;">
             <input type="file" id="picture" name="picture" accept="image/*">
-            <button type="submit" class="btn btn-primary">Change Picture</button>
+            <button type="submit" class="btn btn-primary changepicbutton">Change Profile Picture</button>
+            <button type="button" id="cancelButton" class="btn btn-primary cancelbutton">Cancel</button>
         </form>
-
+        <h1 class="profile-title">User Profile</h1>
         <div class="profile-info">
             <p><i class="fas fa-user"></i> First Name: {{ user.first_name }}</p>
             <p><i class="fas fa-user"></i> Last Name: {{ user.last_name }}</p>
@@ -82,6 +100,16 @@
             }
             return true;
         }
+    </script>
+    <script>
+    document.getElementById('cancelButton').addEventListener('click', function() {
+        document.getElementById('uploadForm').style.display = 'none'; // hides the form
+        document.getElementById('changePicButton').style.display = 'block'; // shows the "Change Profile Picture" button
+    });        
+    document.getElementById('changePicButton').addEventListener('click', function() {
+        this.style.display = 'none'; // hides the "Change Profile Picture" button
+        document.getElementById('uploadForm').style.display = 'block'; // shows the form
+    });
     </script>
 </body>
 </html>
