@@ -2,7 +2,7 @@ import os
 from flask import Blueprint, render_template, redirect, url_for, request, jsonify, send_file, flash
 from flask_login import current_user, login_user, login_required, logout_user
 from datetime import datetime, timedelta
-from forms import RegisterForm, LoginForm, ForgotPasswordForm, ResetPasswordForm, ItemForm
+from forms import RegisterForm, LoginForm, ForgotPasswordForm, ResetPasswordForm, ItemForm, ConfirmForm
 from flask_mail import Message
 from werkzeug.utils import secure_filename
 from models import User, Inventory, Store
@@ -97,13 +97,40 @@ def register():
 
         hashed_password = bcrypt.generate_password_hash(form.password.data)
         new_user = User(username=form.username.data, email=form.email.data, password=hashed_password,
-                        first_name=form.first_name.data, last_name=form.last_name.data, role=form.role.data, profile_picture=picture_file)
+                            first_name=form.first_name.data, last_name=form.last_name.data, role=form.role.data, profile_picture=picture_file)
+
+        new_user.verification_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
 
         db.session.add(new_user)
         db.session.commit()
-        return redirect(url_for('login'))
+
+        msg = Message('Confirm Your Email', recipients=[new_user.email])
+        msg.body = 'Your verification code is: {}'.format(new_user.verification_code)
+        mail.send(msg)
+        return redirect(url_for('confirm_email')) 
 
     return render_template('register.html', form=form)
+
+@app.route('/user_verify', methods=['GET', 'POST'])
+def confirm_email():
+    form = ConfirmForm()  
+
+    if form.validate_on_submit():
+        user = User.query.filter_by(verification_code=form.code.data).first()
+        if user:
+            if not user.verified:
+                user.verified = True
+                user.verification_code = None
+                db.session.add(user)
+                db.session.commit()
+            return redirect(url_for('login'))
+
+    return render_template('user_verify.html', form=form)  
+@app.route('/user_unverified')
+def user_unverified():
+    if current_user.is_anonymous or current_user.verified:
+        return redirect(url_for('routes.home'))
+    return render_template('user_unverified.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -130,13 +157,12 @@ def forgot_password():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
             user.reset_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
-            user.reset_expiration = datetime.now() + timedelta(minutes=10)
+            user.reset_expiration = datetime.now() + timedelta(minutes=5)
             db.session.commit()
 
-            msg = Message('Password Reset', sender='SustainableSouthern@gmail.com', recipients=[user.email])
-            msg.body = 'Your reset code is: {}'.format(user.reset_code)
+            msg = Message('Password Reset', recipients=[user.email])
+            msg.body = 'Your reset code is: {}. This code will expire in 5 minutes.'.format(user.reset_code)
             mail.send(msg)
-
             return redirect(url_for('enter_code'))
 
     return render_template('forgot_password.html', form=form)

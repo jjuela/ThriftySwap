@@ -7,3 +7,4 @@ class Config:
     MAIL_PASSWORD = 'rbjb dwxk lqly smlz'
     MAIL_USE_TLS = False
     MAIL_USE_SSL = True
+    MAIL_DEFAULT_SENDER = ('ThriftyOwl', 'OwlGoSCSU@gmail.com')

@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, ValidationError, SelectField, FloatField, IntegerField, FileField
-from wtforms.validators import InputRequired, Length, Email, NumberRange
+from wtforms.validators import InputRequired, Length, Email, NumberRange, DataRequired
 from flask_wtf.file import FileAllowed
 from models import User  # Import the User model if needed
 
@@ -40,11 +40,9 @@ class RegisterForm(FlaskForm):
         if existing_user_username:
             raise ValidationError(
                 'That username already exists. Please choose a different one.')
-
-    def validate_email(self, email):
-        if not email.data.lower().endswith('@southernct.edu'):
-            raise ValidationError('Please use a Southern Connecticut State University email address.')
-
+class ConfirmForm(FlaskForm):
+    code = StringField('Code', validators=[DataRequired(), Length(min=5, max=5)])
+    submit = SubmitField('Confirm')
 class LoginForm(FlaskForm):
     username = StringField(validators=[
                            InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Username"})
