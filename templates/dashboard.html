@@ -3,172 +3,217 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-    <h2>Thrifty Owl Inventory</h2>
+<h2>Thrifty Owl Inventory</h2>
 
-    <!-- Inventory window -->
-    <div class="inventory-window">
-        <input type="text" id="scannedBarcode" readonly>
-        <button onclick="scanBarcode()">Scan Barcode</button>
+<!-- Inventory window -->
+<div class="inventory-window">
+    <input type="text" id="scannedBarcode" readonly>
 
-        <div class="table-responsive">
-            <table class="table table-bordered table-striped">
-                <thead>
-                    <tr>
-                        <th>Item Name</th>
-                        <th>Material</th>
-                        <th>Weight (kg)</th>
-                        <th>Stock</th>
-                        <th>Value Per Item</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="inventoryBody">
-                </tbody>
-            </table>
-        </div>
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>Item Name</th>
+                    <th>Material</th>
+                    <th>Weight (kg)</th>
+                    <th>Stock</th>
+                    <th>Value Per Item</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="inventoryBody">
+            </tbody>
+        </table>
     </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3/dist/JsBarcode.all.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    fetchInventory();
+    scanBarcode();
+});
 
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3/dist/JsBarcode.all.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            fetchInventory();
+function fetchInventory() {
+    fetch(`/get_inventory`)
+        .then(response => response.json())
+        .then(data => {
+            const inventoryBody = document.getElementById('inventoryBody');
+            inventoryBody.innerHTML = '';
+            data.inventory.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.item_name}</td>
+                    <td>${item.material}</td>
+                    <td>${item.weight}</td>
+                    <td><input type="number" id="quantity_${item.id}" value="${item.stock}" class="form-control"></td>
+                    <td>${item.value_per_item}</td>
+                    <td>
+                        <button onclick="releaseItem(${item.id}, '${item.item_name}')" class="btn btn-primary"><i class="bi bi-box-arrow-up"></i> Release</button>
+                        <button onclick="updateQuantity(${item.id})" class="btn btn-primary"><i class="bi bi-pencil-square"></i> Update </button>
+                        <button onclick="printBarcode('${item.barcode}')" class="btn btn-success"><i class="bi bi-printer"></i> Print Barcode</button>
+                        <button onclick="deleteItem(${item.id})" class="btn btn-danger"><i class="bi bi-trash"></i> Delete</button>
+                    </td>
+                `;
+                inventoryBody.appendChild(row);
+            });
+        })
+        .catch(error => console.error('Error:', error));
+}
 
-            scanBarcode();
-        });
+function updateQuantity(itemId) {
+    const quantityInput = document.getElementById(`quantity_${itemId}`);
+    const quantityToAdd = parseInt(prompt("Enter the quantity to add:"));
 
-        function fetchInventory() {
-            fetch(`/get_inventory`)
-                .then(response => response.json())
-                .then(data => {
-                    const inventoryBody = document.getElementById('inventoryBody');
-                    inventoryBody.innerHTML = '';
-                    data.inventory.forEach(item => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${item.item_name}</td>
-                            <td>${item.material}</td>
-                            <td>${item.weight}</td>
-                            <td><input type="number" id="quantity_${item.id}" value="${item.stock}" class="form-control"></td>
-                            <td>${item.value_per_item}</td>
-                            <!-- Remove the Store column -->
-                            <td>
-                                <button onclick="updateQuantity(${item.id})" class="btn btn-primary"><i class="bi bi-pencil-square"></i> Update</button>
-                                <button onclick="printBarcode('${item.barcode}')" class="btn btn-success"><i class="bi bi-printer"></i> Print Barcode</button>
-                                <button onclick="deleteItem(${item.id})" class="btn btn-danger"><i class="bi bi-trash"></i> Delete</button>
-                            </td>
-                        `;
-                        inventoryBody.appendChild(row);
-                    });
-                })
-                .catch(error => console.error('Error:', error));
-        }
+    if (!isNaN(quantityToAdd) && quantityToAdd > 0) {
+        const donorInfo = prompt("Enter donor information:");
+        if (donorInfo !== null && donorInfo.trim() !== '') {
+            const newQuantity = parseInt(quantityInput.value) + quantityToAdd;
 
-        function updateQuantity(itemId) {
-            const newQuantityElement = document.getElementById(`quantity_${itemId}`);
-            const newQuantity = parseInt(newQuantityElement.value);
-            
-            if (!isNaN(newQuantity)) {
-                fetch('/update_quantity', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ id: itemId, new_quantity: newQuantity }),
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        newQuantityElement.value = newQuantity;
-                    } else {
-                        alert(data.message);
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-            } else {
-                alert("Please enter a valid quantity.");
-            }
-        }
-
-        function printBarcode(barcode) {
-            if (barcode !== null) {
-                const barcodeImage = new Image();
-
-                JsBarcode(barcodeImage, barcode, {
-                    format: "CODE128",
-                    width: 2,
-                    height: 50
-                });
-
-                const printWindow = window.open('', '_blank');
-
-                printWindow.document.body.appendChild(barcodeImage);
-
-                printWindow.print();
-            } else {
-                alert("Barcode number is null.");
-            }
-        }
-
-        function confirmDelete(itemId) {
-            if (confirm("Are you sure you want to delete this item?")) {
-                deleteItem(itemId);
-            }
-        }
-
-        function deleteItem(itemId) {
-            fetch('/delete_item', {
+            fetch('/update_quantity', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ id: itemId }),
+                body: JSON.stringify({ id: itemId, new_quantity: newQuantity, donor_info: donorInfo }),
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    quantityInput.value = newQuantity;
                     alert(data.message);
-                    document.getElementById(`item_${itemId}`).remove(); // Remove item from the page
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        }
 
-        function scanBarcode() {
-            // Assuming your barcode scanner acts like a keyboard input
-            // Listen for keyboard input in the input field where the barcode should appear
-            document.getElementById('scannedBarcode').addEventListener('keypress', function(event) {
-                // Check if Enter key is pressed (barcode scanners often send Enter key after scanning)
-                if (event.keyCode === 13) {
-                    // Get the value entered in the input field
-                    const scannedBarcode = this.value.trim();
-                    
-                    // Clear the input field after scanning
-                    this.value = '';
-
-                    // Send the scanned barcode to the server
-                    fetch('/scan_barcode', {
+                    fetch('/create_intake_transaction', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ barcode: scannedBarcode }),
+                        body: JSON.stringify({
+                            inventory_id: itemId,
+                            item_name: "Item Name",
+                            quantity: quantityToAdd,
+                            donor_info: donorInfo
+                        }),
                     })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            alert(data.message);
-                            // Optionally, update the UI to reflect the updated quantity
-                            // fetchInventory(); // Call a function to refresh inventory data
+                            // Optionally, you can perform additional actions if needed
                         } else {
                             alert(data.message);
                         }
                     })
                     .catch(error => console.error('Error:', error));
-                }
-            });
-        }
 
-    </script>
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        } else {
+            alert("Please enter donor information.");
+        }
+    } else {
+        alert("Please enter a valid quantity to add.");
+    }
+}
+
+function printBarcode(barcode) {
+    if (barcode !== null) {
+        const barcodeImage = new Image();
+
+        JsBarcode(barcodeImage, barcode, {
+            format: "CODE128",
+            width: 2,
+            height: 50
+        });
+
+        const printWindow = window.open('', '_blank');
+
+        printWindow.document.body.appendChild(barcodeImage);
+
+        printWindow.print();
+    } else {
+        alert("Barcode number is null.");
+    }
+}
+
+function confirmDelete(itemId) {
+    if (confirm("Are you sure you want to delete this item?")) {
+        deleteItem(itemId);
+    }
+}
+
+function deleteItem(itemId) {
+    fetch('/delete_item', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: itemId }),
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                document.getElementById(`item_${itemId}`).remove();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+
+
+function releaseItem(itemId, itemName) {
+    var quantity = prompt("Enter the quantity to release:");
+    var donorInfo = prompt("Enter donor information:");
+    if (quantity !== null && !isNaN(quantity) && quantity.trim() !== '' && donorInfo !== null && donorInfo.trim() !== '') {
+        fetch('/release_item', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ item_name: itemName, item_id: itemId, quantity: parseInt(quantity), donor_info: donorInfo }),
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    } else {
+        alert("Please enter a valid quantity and donor information.");
+    }
+}
+
+function scanBarcode() {
+    document.getElementById('scannedBarcode').addEventListener('keypress', function (event) {
+        if (event.keyCode === 13) {
+            const scannedBarcode = this.value.trim();
+            this.value = '';
+
+            fetch('/scan_barcode', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ barcode: scannedBarcode }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+    });
+}
+</script>
 {% endblock %}
