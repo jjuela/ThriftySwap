@@ -1,11 +1,11 @@
-import os
+import os 
 from flask import Blueprint, render_template, redirect, url_for, request, jsonify, send_file, flash
 from flask_login import current_user, login_user, login_required, logout_user
 from datetime import datetime, timedelta
 from forms import RegisterForm, LoginForm, ForgotPasswordForm, ResetPasswordForm, ItemForm, ConfirmForm
 from flask_mail import Message
 from werkzeug.utils import secure_filename
-from models import User, Inventory, Store
+from models import User, Inventory, Store, IntakeTransaction, OuttakeTransaction
 from app import app, db, mail
 from flask_bcrypt import Bcrypt
 from barcode import generate as generate_barcode
@@ -13,11 +13,13 @@ from barcode.writer import ImageWriter
 from io import BytesIO
 import random
 import string
-from sqlalchemy import func
+from sqlalchemy import func, extract
+
 
 bp = Blueprint('routes', __name__)
 
 bcrypt = Bcrypt()
+
 
 @bp.route('/')
 def home():
@@ -55,17 +57,18 @@ def add_item():
 
 @app.route('/delete_item', methods=['POST'])
 def delete_item():
-    data = request.json
-    item_id = data['id']
-    
+    request_data = request.get_json()
+    item_id = request_data.get('id')
+
     inventory_item = Inventory.query.get(item_id)
+
     if inventory_item:
         db.session.delete(inventory_item)
         db.session.commit()
         return jsonify({'success': True, 'message': 'Item deleted successfully'})
     else:
         return jsonify({'success': False, 'message': 'Item not found'})
-
+    
 @bp.route('/scan_barcode', methods=['POST'])
 @login_required
 def scan_barcode():
@@ -194,10 +197,12 @@ def verify_code():
     else:
         return jsonify(code_valid=False)
 
-@app.route('/dashboard', methods=['GET', 'POST'])
+from collections import defaultdict
+
+@app.route('/dashboard')
 @login_required
 def dashboard():
-    inventory_items = Inventory.query.all()
+    inventory_items = Inventory.query.all() 
     return render_template('dashboard.html', inventory_items=inventory_items)
 
 @app.route('/swapshopbase')
@@ -275,3 +280,222 @@ def get_inventory():
     } for item in inventory_items]
 
     return jsonify({'inventory': serialized_items})
+
+@app.route('/release_item', methods=['POST'])
+@login_required
+def release_item():
+    data = request.json
+    item_id = data['item_id']
+    quantity = data['quantity']
+    donor_info = data['donor_info']
+
+    # Get the item name from the inventory
+    inventory_item = Inventory.query.get(item_id)
+    if inventory_item:
+        if inventory_item.stock >= quantity:
+            # Subtract released quantity from stock
+            inventory_item.stock -= quantity
+
+            # Create a new outtake transaction record with donor information
+            outtake_transaction = OuttakeTransaction(
+                inventory_id=item_id,
+                quantity=quantity,
+                donor_info=donor_info,  # Include donor information
+                timestamp=datetime.utcnow()
+            )
+            db.session.add(outtake_transaction)
+            db.session.commit()
+
+            return jsonify({'success': True, 'message': 'Item released successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Insufficient stock'})
+    else:
+        return jsonify({'success': False, 'message': 'Item not found'})
+   
+def get_item_name(item_id, transaction_type):
+    # Assuming your item name is stored directly in the transaction model
+    transaction = None
+    if transaction_type == 'intake':
+        transaction = IntakeTransaction.query.get(item_id)
+    elif transaction_type == 'outtake':
+        transaction = OuttakeTransaction.query.get(item_id)
+
+    if transaction:
+        return transaction.item_name  # Adjust this attribute according to your model
+    else:
+        return None  # Or handle the case where the item ID is invalid
+
+
+@app.route('/filter_inventory')
+def filter_inventory():
+    date = request.args.get('date')
+
+    # Assuming you have a function to fetch filtered data from the database
+    # Here, we'll simply return all inventory items as an example
+    inventory_items = Inventory.query.all()
+    
+    # Convert inventory items to a list of dictionaries
+    inventory_data = [
+        {
+            'id': item.id,
+            'item_name': item.item_name,
+            'material': item.material,
+            'weight': item.weight,
+            'stock': item.stock,
+            'value_per_item': str(item.value_per_item),
+            'barcode': item.barcode,
+            'store_id': item.store_id,
+            'type': item.type
+        }
+        for item in inventory_items
+    ]
+
+    # Return inventory data as JSON
+    return jsonify(inventory_data)
+
+@app.route('/thriftyowlrecords')
+def thriftyowlrecords():
+    # Query all intake transactions from the database
+    intake_transactions = IntakeTransaction.query.all()
+    # Query all outtake transactions from the database
+    outtake_transactions = OuttakeTransaction.query.all()
+
+    # Assuming you have a function to collect intake info from transactions
+    # Here, intake_info is a dictionary where keys are items and values are lists of intake transactions
+    intake_info = collect_intake_info(intake_transactions)
+
+    # Pass the intake and outtake transactions data, as well as intake_info, to the HTML template for rendering
+    return render_template('thriftyowlrecords.html', intake_info=intake_info, outtake_transactions=outtake_transactions)
+
+def collect_intake_info(intake_transactions):
+    intake_info = {}
+    for transaction in intake_transactions:
+        item_name = transaction.inventory.item_name
+        if item_name in intake_info:
+            intake_info[item_name].append(transaction)
+        else:
+            intake_info[item_name] = [transaction]
+    return intake_info
+
+def collect_intake_info(intake_transactions):
+    intake_info = {}
+    for transaction in intake_transactions:
+        if transaction.inventory:
+            item_name = transaction.inventory.item_name
+            if item_name not in intake_info:
+                intake_info[item_name] = []
+            intake_info[item_name].append(transaction)
+    return intake_info
+
+
+@app.route('/filter_by_day', methods=['GET'])
+def filter_by_day():
+    date_str = request.args.get('date')
+    date = datetime.strptime(date_str, '%Y-%m-%d').date()
+
+    # Query intake and outtake transactions for the specified date
+    intake_transactions = IntakeTransaction.query.filter(func.date(IntakeTransaction.timestamp) == date).all()
+    outtake_transactions = OuttakeTransaction.query.filter(func.date(OuttakeTransaction.timestamp) == date).all()
+
+    # Pass the filtered intake and outtake transactions data to the HTML template for rendering
+    return render_template('filtered_transactions.html', intake_transactions=intake_transactions, outtake_transactions=outtake_transactions, filter_date=date)
+
+@app.route('/summarize_by_month', methods=['GET'])
+def summarize_by_month():
+    # Get the current month and year
+    current_month = datetime.now().month
+    current_year = datetime.now().year
+
+    # Query intake and outtake transactions for the current month
+    intake_transactions = IntakeTransaction.query.filter(
+        extract('month', IntakeTransaction.timestamp) == current_month,
+        extract('year', IntakeTransaction.timestamp) == current_year
+    ).all()
+    outtake_transactions = OuttakeTransaction.query.filter(
+        extract('month', OuttakeTransaction.timestamp) == current_month,
+        extract('year', OuttakeTransaction.timestamp) == current_year
+    ).all()
+
+    # Summarize the intake and outtake transactions data to calculate the total quantity for each item
+    intake_summarized_data = {}
+    outtake_summarized_data = {}
+    for transaction in intake_transactions:
+        item_name = transaction.inventory.item_name
+        quantity = transaction.quantity
+        if item_name in intake_summarized_data:
+            intake_summarized_data[item_name] += quantity
+        else:
+            intake_summarized_data[item_name] = quantity
+    for transaction in outtake_transactions:
+        item_name = transaction.inventory.item_name
+        quantity = transaction.quantity
+        if item_name in outtake_summarized_data:
+            outtake_summarized_data[item_name] += quantity
+        else:
+            outtake_summarized_data[item_name] = quantity
+
+    # Pass the summarized intake and outtake data to the HTML template for rendering
+    return render_template('summarized_transactions.html', intake_summarized_data=intake_summarized_data, outtake_summarized_data=outtake_summarized_data)
+
+@app.route('/summarized_transactions')
+@login_required
+def summarized_transactions():
+    # Get query parameters for month and year
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
+
+    # Fetch intake and outtake transactions based on the selected month and year
+    intake_transactions = IntakeTransaction.query.filter(
+        extract('month', IntakeTransaction.timestamp) == month,
+        extract('year', IntakeTransaction.timestamp) == year
+    ).all()
+    outtake_transactions = OuttakeTransaction.query.filter(
+        extract('month', OuttakeTransaction.timestamp) == month,
+        extract('year', OuttakeTransaction.timestamp) == year
+    ).all()
+
+    # Summarize the intake and outtake transactions data to calculate the total quantity for each item
+    intake_summarized_data = defaultdict(int)
+    outtake_summarized_data = defaultdict(int)
+    for transaction in intake_transactions:
+        item_name = transaction.inventory.item_name
+        quantity = transaction.quantity
+        intake_summarized_data[item_name] += quantity
+    for transaction in outtake_transactions:
+        item_name = transaction.inventory.item_name
+        quantity = transaction.quantity
+        outtake_summarized_data[item_name] += quantity
+
+    return render_template('summarized_transactions.html', intake_summarized_data=intake_summarized_data, outtake_summarized_data=outtake_summarized_data)
+
+@app.route('/create_intake_transaction', methods=['POST'])
+def create_intake_transaction():
+    data = request.json  # Assuming the data is sent as JSON
+
+    # Extract required data from the request
+    inventory_id = data.get('inventory_id')
+    item_name = data.get('item_name')
+    quantity = data.get('quantity')
+    donor_info = data.get('donor_info')
+
+    # Create a new intake transaction
+    intake_transaction = IntakeTransaction(
+        inventory_id=inventory_id,
+        item_name=item_name,
+        quantity=quantity,
+        user="User",  # Assuming you have a user field
+        donor_info=donor_info,
+        timestamp=datetime.now()  # Assuming you have imported datetime
+    )
+
+    # Add the new intake transaction to the database session
+    db.session.add(intake_transaction)
+
+    try:
+        # Commit the changes to the database
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Intake transaction created successfully'})
+    except Exception as e:
+        # Rollback the transaction if an error occurs
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500

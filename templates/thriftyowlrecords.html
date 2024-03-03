@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thrifty Owl Inventory Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .right-aligned {
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <h1>Thrifty Owl Inventory Report</h1>
+    <hr>
+    <div>
+        <h2>Intake Report</h2>
+        <label for="intake-date-filter">Filter by Date:</label>
+        <input type="date" id="intake-date-filter">
+        <button onclick="filterIntakeTable()">Filter</button>
+        <button onclick="printIntakeTable()">Print</button>
+        <table id="intake-table">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Material</th>
+                    <th>Value Per Item</th>
+                    <th>Weight</th>
+                    <th>Timestamp</th>
+                    <th>Amount Donated</th>
+                    <th>Donor Information</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item, intake_data in intake_info.items() %}
+                <tr>
+                    {% for intake_transaction in intake_data %}
+                    <!-- Separate intake transaction information into different columns -->
+                    <td>{{ intake_transaction.inventory.item_name }}</td>
+                    <td>{{ intake_transaction.inventory.material }}</td>
+                    <td>{{ intake_transaction.inventory.value_per_item }}</td>
+                    <td>{{ intake_transaction.inventory.weight }}</td>
+                    <td>
+                        <script>
+                            var timestampString = "{{ intake_transaction.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%fZ') }}";
+                            var timestamp = new Date(timestampString);
+                            var options = { timeZone: "America/New_York", year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "numeric", hour12: true };
+                            var easternTime = timestamp.toLocaleString("en-US", options);
+                            document.write(easternTime);
+                        </script>
+                    </td>
+                    <td>{{ intake_transaction.quantity }}</td>
+                    <td>{{ intake_transaction.donor_info }}</td>
+                    </tr><tr><!-- Create a new row for each intake transaction -->
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>      
+
+    <div>
+        <h2>Outtake History</h2>
+        <label for="outtake-date-filter">Filter by Date:</label>
+        <input type="date" id="outtake-date-filter">
+        <button onclick="filterOuttakeTable()">Filter</button>
+        <button onclick="printOuttakeTable()">Print</button>
+        <table id="outtake-table">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Quantity</th>
+                    <th>Weight</th>
+                    <th>Total Weight</th> <!-- Added total weight column -->
+                    <th>Donor Information</th>
+                    <th>Value Per Item</th>
+                    <th>Timestamp</th>
+                    <th>Total Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for outtake_transaction in outtake_transactions %}
+                <tr>
+                    <td>{{ outtake_transaction.inventory.item_name }}</td> 
+                    <td>{{ outtake_transaction.quantity }}</td>
+                    <td>{{ outtake_transaction.inventory.weight }}</td> <!-- Access weight from the inventory -->
+                    <td>{{ outtake_transaction.inventory.weight * outtake_transaction.quantity }}</td> <!-- Calculate and display total weight -->
+                    <td>{{ outtake_transaction.donor_info }}</td>
+                    <td>{{ outtake_transaction.inventory.value_per_item }}</td> <!-- Access value_per_item from the inventory -->
+                    <td>
+                        <script>
+                            var timestampString = "{{ outtake_transaction.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%fZ') }}";
+                            var timestamp = new Date(timestampString);
+                            var easternTime = timestamp.toLocaleString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "numeric", hour12: true });
+                            var easternDate = timestamp.toLocaleString("en-US", { timeZone: "America/New_York", year: "numeric", month: "long", day: "numeric" });
+                            document.write(easternDate + " " + easternTime);
+                        </script>
+                    </td>                    
+                    <td>{{ outtake_transaction.inventory.value_per_item * outtake_transaction.quantity }}</td> <!-- Calculate and display total amount -->
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>  
+
+    <script>
+        // JavaScript functions for filtering and printing intake table
+        function filterIntakeTable() {
+            var input, filter, table, tr, td, i, txtValue;
+            input = document.getElementById("intake-date-filter");
+            filter = input.value;
+            table = document.getElementById("intake-table");
+            tr = table.getElementsByTagName("tr");
+            for (i = 0; i < tr.length; i++) {
+                td = tr[i].getElementsByTagName("td")[4]; // Assuming timestamp is in the 5th column
+                if (td) {
+                    txtValue = td.textContent || td.innerText;
+                    if (txtValue.indexOf(filter) > -1) {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }
+            }
+        }
+
+        function printIntakeTable() {
+            var printContents = document.getElementById("intake-table").outerHTML;
+            var originalContents = document.body.innerHTML;
+            document.body.innerHTML = printContents;
+            window.print();
+            document.body.innerHTML = originalContents;
+        }
+
+        // JavaScript functions for filtering and printing outtake table
+        function filterOuttakeTable() {
+            var input, filter, table, tr, td, i, txtValue;
+            input = document.getElementById("outtake-date-filter");
+            filter = input.value;
+            table = document.getElementById("outtake-table");
+            tr = table.getElementsByTagName("tr");
+            for (i = 0; i < tr.length; i++) {
+                td = tr[i].getElementsByTagName("td")[6]; // Assuming timestamp is in the 7th column
+                if (td) {
+                    txtValue = td.textContent || td.innerText;
+                    if (txtValue.indexOf(filter) > -1) {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }
+            }
+        }
+
+        function printOuttakeTable() {
+            var printContents = document.getElementById("outtake-table").outerHTML;
+            var originalContents = document.body.innerHTML;
+            document.body.innerHTML = printContents;
+            window.print();
+            document.body.innerHTML = originalContents;
+        }
+    </script>
+</body>
+</html>
+{% endblock %}
