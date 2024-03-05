@@ -30,9 +30,9 @@ class RegisterForm(FlaskForm):
             raise ValidationError(
                 'That username already exists. Please choose a different one.')
 
-    def validate_email(self, email):
-        if not email.data.lower().endswith('@southernct.edu'):
-            raise ValidationError('Please use a Southern Connecticut State University email address.')
+    #def validate_email(self, email):
+        #if not email.data.lower().endswith('@southernct.edu'):
+           # raise ValidationError('Please use a Southern Connecticut State University email address.')
 
     def validate_username(self, username):
         existing_user_username = User.query.filter_by(
